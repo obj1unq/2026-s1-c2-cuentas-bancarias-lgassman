@@ -2,8 +2,155 @@ import casa.*
 
 describe "casa de pepe y julian" {
 
-  // Descomentar si hiciera falta un metodo para inicializar el ambiente
-  // method initialize() {
-  // }
+  test "casa con cuenta corriente" {
+    casa.cuenta(cuentaCorriente)
+    cuentaCorriente.saldo(300)
+    casa.gastar(200)
+    assert.equals(100, cuentaCorriente.saldo())
+    assert.equals(200, casa.gastos())
+    casa.gastar(400)
+    assert.equals(-300, cuentaCorriente.saldo())
+    assert.equals(600, casa.gastos())
+    casa.nuevoMes()
+    assert.equals(0, casa.gastos())
+  }
+
+  test "cuenta con Gastos" {
+    cuentaConGastos.costoOperacion(20)
+    cuentaConGastos.depositar(1000)
+    assert.equals(980, cuentaConGastos.saldo())
+    cuentaConGastos.extraer(580)
+    assert.equals(400, cuentaConGastos.saldo())
+    cuentaConGastos.extraer(500)
+    assert.equals(-100, cuentaConGastos.saldo())
+    cuentaConGastos.depositar(150)
+    assert.equals(30, cuentaConGastos.saldo())
+    
+  }
+  test "no se puede depositar un monto menor al costo de operacion en la cuenta con gastos" {
+    cuentaConGastos.costoOperacion(20)
+    assert.throwsException({cuentaConGastos.depositar(10)})
+    assert.equals(0, cuentaConGastos.saldo())
+    
+  }
+
+  test "saldo cuenta combinada" {
+    self.assertSaldo(200, 50, 250)
+    self.assertSaldo(-50, 200, 200)
+    self.assertSaldo(150, -20, 150)
+    self.assertSaldo(-40, -60, 0)
+  }
+
+  method assertSaldo(saldoPrimaria, saldoSecundaria,saldoEsperado ) {
+    cuentaConGastos.saldo(saldoPrimaria)
+    cuentaCorriente.saldo(saldoSecundaria)
+    cuentaCombinada.cuentaPrimaria(cuentaConGastos)
+    cuentaCombinada.cuentaSecundaria(cuentaCorriente)
+    assert.equals(saldoEsperado, cuentaCombinada.saldo())
+  }
+
+  test "gastos con cuenta combinada" {
+    casa.cuenta(cuentaCombinada)
+    cuentaConGastos.costoOperacion(20)
+    cuentaCombinada.cuentaPrimaria(cuentaConGastos)
+    cuentaCombinada.cuentaSecundaria(cuentaCorriente)
+    cuentaCorriente.saldo(300)
+    cuentaCombinada.depositar(100)
+    assert.equals(80, cuentaConGastos.saldo())
+    assert.equals(380, cuentaCombinada.saldo())
+
+    casa.gastar(280)
+    assert.equals(280, casa.gastos())
+    assert.equals(0, cuentaConGastos.saldo())
+    assert.equals(100, cuentaCombinada.saldo())
+    assert.equals(100, cuentaCorriente.saldo())
+
+    assert.throwsException({cuentaCombinada.depositar(10)})
+    assert.equals(100, cuentaCombinada.saldo())
+
+    assert.throwsException({casa.gastar(1000)})
+    assert.equals(100, cuentaCombinada.saldo())
+    assert.equals(280, casa.gastos())
+
+  }
+
+  test "parte 3, reparaciones y viveres" {
+    
+    casa.viveres(30)
+    casa.cuenta(cuentaCorriente)
+    cuentaCorriente.saldo(2000)
+
+    casa.romper(1000)
+    assert.notThat(casa.viveresSuficientes())
+    assert.that(casa.hayQueReparar())
+    assert.notThat(casa.enOrden())
+    assert.equals(1000, casa.reparaciones())
+
+    assert.throwsException({casa.comprar(80, 2)})
+    assert.equals(30, casa.viveres())
+    assert.equals(2000, cuentaCorriente.saldo())
+    assert.equals(0, casa.gastos())
+
+    casa.comprar(20, 2)
+    assert.that(casa.viveresSuficientes())
+    assert.equals(50, casa.viveres())
+    assert.notThat(casa.enOrden())
+    assert.equals(1960, cuentaCorriente.saldo())
+    assert.equals(40, casa.gastos())
+
+    casa.reparar() 
+    assert.notThat(casa.hayQueReparar())
+    assert.that(casa.enOrden())
+    assert.equals(960, cuentaCorriente.saldo())
+    assert.equals(1040, casa.gastos())
+    
+  }
+
+  test "minimo indispensable" {
+    casa.viveres(30)
+    casa.reparaciones(100)
+    casa.cuenta(cuentaCombinada)
+    cuentaCombinada.cuentaPrimaria(cuentaConGastos)
+    cuentaCombinada.cuentaSecundaria(cuentaCorriente)
+    cuentaConGastos.costoOperacion(20)
+    casa.mantenimiento(minimoIndispensable)
+    minimoIndispensable.calidad(3)
+
+    assert.throwsException({casa.nuevoMes()})
+    cuentaCombinada.depositar(100)
+    casa.nuevoMes()
+    assert.equals(40, casa.viveres())
+    assert.equals(100, casa.reparaciones())
+    assert.equals(0, casa.gastos())
+    assert.equals(50, cuentaCombinada.saldo())
+
+
+  }
+  test "full" {
+    casa.viveres(30)
+    casa.reparaciones(100)
+    casa.cuenta(cuentaCorriente)
+    casa.mantenimiento(full)
+
+    casa.nuevoMes()
+    assert.equals(40, casa.viveres())
+    assert.equals(-50, cuentaCorriente.saldo())
+    assert.equals(100, casa.reparaciones())
+
+    cuentaCorriente.depositar(450)
+    casa.nuevoMes()
+    assert.equals(40, casa.viveres())
+    assert.equals(300, cuentaCorriente.saldo())
+    assert.equals(0, casa.reparaciones())
+        
+    casa.nuevoMes()
+    assert.equals(100, casa.viveres())
+    assert.equals(0, cuentaCorriente.saldo())
+
+    casa.nuevoMes()
+    assert.equals(100, casa.viveres())
+    assert.equals(0, cuentaCorriente.saldo())
+}
+
 
 }
